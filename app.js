@@ -140,6 +140,12 @@ ready.then(() => {
   // 확대했을 때 카카오에서 실시간으로 받아온 편의점·약국 (저장하지 않고 화면에만 표시)
   map.addSource("live", { type: "geojson", data: fc([]) });
   map.addLayer({ id: "live", type: "circle", source: "live", paint: pointPaint });
+  // 실시간 장소 이름 (확대했을 때만) — 지도에 쓰인 한글 글꼴을 그대로 사용
+  const baseFont = (map.getStyle().layers.find((l) => l.type === "symbol" && l.layout && l.layout["text-font"]) || {}).layout?.["text-font"] || ["Noto Sans Regular"];
+  map.addLayer({ id: "live-label", type: "symbol", source: "live", minzoom: 15.5,
+    layout: { "text-field": ["get", "name"], "text-font": baseFont, "text-size": 11,
+      "text-offset": [0, 1.1], "text-anchor": "top", "text-max-width": 8, "text-optional": true },
+    paint: { "text-color": "#E8E8EC", "text-halo-color": NIGHT.base, "text-halo-width": 1.5 } });
   map.on("click", "live", (e) => openCard(livePlaces[e.features[0].properties.idx]));
   map.on("mouseenter", "live", () => map.getCanvas().style.cursor = "pointer");
   map.on("mouseleave", "live", () => map.getCanvas().style.cursor = "");
@@ -238,6 +244,7 @@ function renderCounter() {
 /* 장소마다 바뀌는 짧은 이야기 (모두 데이터로 계산) */
 function narrate(text) {
   const n = $("narration");
+  if (!n) return;   // 미니멀 버전: 화면 아래 설명 문장은 쓰지 않음
   n.classList.remove("is-new"); void n.offsetWidth; n.classList.add("is-new");
   n.textContent = text;
 }
@@ -268,8 +275,8 @@ function openCard(f) {
   selected = f;
   const p = f.properties, c = CATS[p.cat], st = stateOf(f);
   const [lng, lat] = f.geometry.coordinates;
-  const status = { open: "지금 열려 있음 ........ OPEN", closed: "지금 닫혀 있음 ...... CLOSED", unknown: "영업 여부 ........ 확인 불가" }[st];
   const enc = encodeURIComponent;
+  const status = { open: "지금 열려 있음 ........ OPEN", closed: "지금 닫혀 있음 ...... CLOSED", unknown: "영업 여부 ........ 확인 불가" }[st];
   const rows = [["상호", esc(p.name)], ["분류", c.label], ["주소", esc(p.addr)]];
   if (p.cat === "er") rows.push(["등급", esc(p.level)], ["전화", esc(p.tel)]);
   if (p.kakao && p.tel) rows.push(["전화", esc(p.tel)]);
@@ -282,15 +289,11 @@ function openCard(f) {
     <div class="r-rule"></div>
     <div class="r-status r-${st}">${status}</div>
     <div class="r-note">${c.note}</div>
-    ${p.kakao ? `<div class="r-note">● 카카오맵 실시간 장소 정보</div>`
-      : ["convenience", "shop"].includes(p.cat) ? `<div class="r-note">${p.verified ? "✓ 서울시 인허가 정보: 영업 중" : "※ 상가정보 기준 (인허가로 확인 안 됨)"}</div>` : ""}
     <div class="r-rule"></div>
     ${st === "open" ? `<button class="action action--main" onclick="chooseHere()">여기로 갈래요 → 영수증 받기</button>` : ""}
     <button class="action" onclick="routeTo()">여기까지 걸어가는 경로 보기</button>
     <a class="action" target="_blank" rel="noopener" href="${p.url || `https://map.kakao.com/link/map/${enc(p.name)},${lat},${lng}`}">카카오지도에서 보기 ↗</a>
-    <a class="action" target="_blank" rel="noopener" href="https://map.naver.com/p/search/${enc(p.name)}">네이버지도에서 보기 ↗</a>
-    <div class="r-rule r-rule--double"></div>
-    <div class="barcode">*${String(f.id ?? 0).padStart(6, "0")}*</div>`;
+    <a class="action" target="_blank" rel="noopener" href="https://map.naver.com/p/search/${enc(p.name)}">네이버지도에서 보기 ↗</a>`;
   $("card").hidden = false;
   fitCard();
   narrate(storyFor(f));
@@ -333,15 +336,6 @@ function distance(a, b) {
 }
 const fmt = (m) => m < 1000 ? `${Math.round(m)}m` : `${(m / 1000).toFixed(1)}km`;
 
-$("btn-nearest").onclick = async () => {
-  if (!myPos) { try { await locate(); } catch { return; } }
-  let best = null, bd = Infinity;
-  for (const f of visible) { if (stateOf(f) !== "open") continue; const d = distance(myPos, f.geometry.coordinates); if (d < bd) { bd = d; best = f; } }
-  if (!best) return toast("지금 열린 곳이 없어요");
-  map.flyTo({ center: best.geometry.coordinates, zoom: 16.5 });
-  openCard(best);
-  toast(`가장 가까운 열린 곳: 약 ${fmt(bd)}`, 4000);
-};
 
 function clearRoute() { if (map.getSource("route")) map.getSource("route").setData(fc([])); }
 async function routeTo() {
@@ -471,7 +465,7 @@ async function refreshLive() {
   }
   map.getSource("live").setData(fc(livePlaces.map((f, i) => ({
     type: "Feature", geometry: f.geometry,
-    properties: { cat: f.properties.cat, state: stateOf(f), idx: i, sit: situation },
+    properties: { cat: f.properties.cat, state: stateOf(f), idx: i, sit: situation, name: f.properties.name },
   }))));
   setLive(true);
 }
