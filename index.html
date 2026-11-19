@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>새벽 세 시, 서울</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Barcode+39&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ───── 1막: 방 안에서 깨어 있음 ───── -->
+  <section class="screen is-on" id="story">
+    <div class="story-timer" id="timer">02:58:00</div>
+    <div class="story-meta">SEOUL · 37.5665°N 126.9780°E</div>
+    <p class="story-text" id="story-text"></p>
+    <div class="story-choices" id="choices" hidden>
+      <button class="btn choice" data-sit="sick">
+        <span class="c-idx">01</span>
+        <span class="c-label">갑자기 열이 나고 아파요</span>
+      </button>
+      <button class="btn choice" data-sit="hungry">
+        <span class="c-idx">02</span>
+        <span class="c-label">긴 밤 끝에 배가 고파요</span>
+      </button>
+      <button class="btn choice" data-sit="nowhere">
+        <span class="c-idx">03</span>
+        <span class="c-label">그냥 방에 있을 수가 없어요</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ───── 2막: 꺼진 도시 (지도) ───── -->
+  <section id="mapview" hidden>
+    <div id="map"></div>
+
+    <!-- 믹스드 미디어 겹 (클릭 통과) -->
+    <div class="fx fx-paper"></div>
+    <div class="fx fx-halftone"></div>
+    <div class="fx fx-grain"></div>
+    <div class="hud" aria-hidden="true">
+      <span class="hud-cross hud-cross--tl"></span><span class="hud-cross hud-cross--tr"></span>
+      <span class="hud-cross hud-cross--bl"></span><span class="hud-cross hud-cross--br"></span>
+      <div class="hud-checker"></div>
+      <div class="hud-ghost">새벽<br>세 시</div>
+      <div class="hud-side">THEN ←──── NOW &nbsp;·&nbsp; 02:58 → 03:00 &nbsp;·&nbsp; *** &nbsp;·&nbsp; 서울특별시 25개 구</div>
+      <div class="hud-clock" id="hud-clock">03:00:00</div>
+      <div class="hud-live" id="hud-live" hidden>● LIVE · 카카오 실시간 장소</div>
+    </div>
+
+    <nav class="tabs">
+      <button class="btn" data-sit="sick">아파요</button>
+      <button class="btn" data-sit="hungry">배고파요</button>
+      <button class="btn" data-sit="nowhere">갈 곳이 없어요</button>
+    </nav>
+
+    <div class="tools">
+      <button class="btn btn--small" id="btn-locate">◎ 내 위치</button>
+      <button class="btn btn--small" id="btn-nearest">가장 가까운 열린 곳</button>
+    </div>
+
+    <div class="toast" id="toast" hidden></div>
+    <div class="narration" id="narration"></div>
+    <div class="counter" id="counter"></div>
+    <button class="btn end" id="btn-end">새벽 3시를 끝내기</button>
+
+    <article class="receipt card" id="card" hidden></article>
+  </section>
+
+  <!-- ───── 3막: 생존 영수증 ───── -->
+  <section class="screen" id="ending">
+    <div class="printer-slot"></div>
+    <div class="print-wrap"><div class="receipt" id="final"></div></div>
+    <button class="btn" onclick="location.reload()">처음으로</button>
+    <p class="source">
+      데이터: 소상공인시장진흥공단 상가(상권)정보 · 서울시 응급실 위치 정보 · 서울시 공공심야약국 지정현황<br>
+      장소(확대 시): Kakao Local API 실시간 · 지도: OpenFreeMap © OpenMapTiles © OpenStreetMap contributors · 경로: OSRM (FOSSGIS)
+    </p>
+  </section>
+
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
